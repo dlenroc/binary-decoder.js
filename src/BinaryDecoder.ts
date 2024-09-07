@@ -3,7 +3,11 @@ type DecodedEntry<T> = [T] extends [never] ? unknown[] : T[];
 type DecoderResult<T> = IteratorResult<DecodedEntry<T>, DecodedEntry<T>>;
 type DecoderCloseResult<T> = { buffers: Uint8Array[]; value: DecodedEntry<T> };
 
-export type Decoder<T> = Generator<Yield<T>, void, Uint8Array>;
+export type Decoder<T = never, TReturn = void> = Generator<
+  Yield<T>,
+  TReturn,
+  Uint8Array
+>;
 
 export class BinaryDecoder<T = never> {
   #byteLength = 0;

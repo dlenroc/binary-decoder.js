@@ -1,6 +1,6 @@
 # @dlenroc/binary-decoder · [![NPM Version](https://img.shields.io/npm/v/@dlenroc/binary-decoder)](https://www.npmjs.com/package/@dlenroc/binary-decoder)
 
-A lightweight library for implementing incremental binary data parsers using generators.
+A library for implementing incremental binary data parsers using generators.
 
 ## Installation
 
@@ -10,14 +10,9 @@ npm install @dlenroc/binary-decoder
 
 ## Usage
 
-The `yield` syntax allows parsers to:
-
-- **Request Data**: `yield N` reads `N` bytes; `yield -N` reads up to `|N|` bytes, with a minimum of 1 byte.
-- **Push Back Data**: `yield ArrayBufferView` (e.g., `Uint8Array`) returns bytes to the buffer.
-- **Produce Results**: `yield <other>` adds data to the final result.
-
-> 🚨 `yield N` returns a view of the input passed to `decode`,
-> making a copy only if multiple chunks are needed to satisfy the request.
+The `BinaryDecoder` class enables streaming binary decoding using a generator
+function. It leverages `yield` to read bytes, return unused data, and produce
+the decoded result.
 
 ```ts
 import { BinaryDecoder } from '@dlenroc/binary-decoder';
@@ -46,63 +41,44 @@ console.log(decoder.decode(Uint8Array.of(10, 20, 30)));
 // ]
 ```
 
+## Examples
+
 ### Stateful Parsing
 
 Suppose we need to parse a simple protocol defined as follows:
 
-| No. of bytes | Type [Value] | Description  |
-| ------------ | ------------ | ------------ |
-| 1            | U8 [1]       | message-type |
-| 4            | U32          | length       |
-| length       | U8 array     | text         |
+| No. of bytes | Type [Value] | Description |
+| ------------ | ------------ | ----------- |
+| 4            | U32          | length      |
+| length       | U8 array     | text        |
 
 ```ts
-import { BinaryDecoder, type Decoder } from '@dlenroc/binary-decoder';
+import type { Decoder } from '@dlenroc/binary-decoder';
+import { BinaryDecoder, getUint32 } from '@dlenroc/binary-decoder';
 
-type Echo = { type: 1; text: String };
-
-function* parse(): Decoder<Echo> {
+function* parse(): Decoder<string> {
   while (true) {
-    const [type] = yield 1;
-    switch (type) {
-      case 1:
-        yield* parseEcho();
-        break;
-      default:
-        throw new Error(`Unknown message type: ${type}`);
-    }
-  }
-}
+    const length = yield* getUint32();
+    const bytes = yield length;
 
-function* parseEcho(): Decoder<Echo> {
-  const bytes = yield 4;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const text = new TextDecoder().decode(yield view.getUint32(0));
-  yield { type: 1, text };
+    yield new TextDecoder().decode(bytes);
+  }
 }
 
 const decoder = new BinaryDecoder(parse);
 
 // create a message
 const textBytes = new TextEncoder().encode('Hello, World!');
-const chunk = new Uint8Array(5 + textBytes.byteLength);
-const view = new DataView(chunk.buffer);
-view.setUint8(0, 1);
-view.setUint32(1, textBytes.byteLength);
-chunk.set(textBytes, 5);
+const chunk = new Uint8Array([...new Uint8Array(4), ...textBytes]);
+new DataView(chunk.buffer).setUint32(0, textBytes.byteLength);
 
 // [1] Parse a message
 console.log(decoder.decode(chunk));
-// [
-//   { type: 1, text: 'Hello, World!' }
-// ]
+// [ 'Hello, World!' ]
 
 // [2] Parse multiple messages
 console.log(decoder.decode(Uint8Array.of(...chunk, ...chunk)));
-// [
-//   { type: 1, text: 'Hello, World!' },
-//   { type: 1, text: 'Hello, World!' }
-// ]
+// [ 'Hello, World!', 'Hello, World!' ]
 
 // [3] Parse a message split across chunks
 console.log(decoder.decode(chunk.subarray(0, 3)));
@@ -110,56 +86,38 @@ console.log(decoder.decode(chunk.subarray(0, 3)));
 console.log(decoder.decode(chunk.subarray(3, 5)));
 // []
 console.log(decoder.decode(chunk.subarray(5)));
-// [
-//   { type: 1, text: 'Hello' }
-// ]
+// [ 'Hello, World!' ]
 ```
 
 ### Handling Large Messages
 
-In the [Stateful Parsing](#stateful-parsing) example, the Echo message’s text
-length is encoded as a U32, which can represent sizes up to 4.29 GB.
-For processing such large messages, streaming is more practical than buffering
-the entire message in memory.
-
-Here’s how to implement streaming for large messages:
+Update the decoder to stream decoded chunks directly, avoiding buffering.
 
 ```ts
-type Echo = { type: 1; text: ReadableStream<string> };
+import { getUint32, streamBytes } from '@dlenroc/binary-decoder';
 
-function* parseEcho(): Decoder<Echo> {
-  const textDecoderStream = new TextDecoderStream();
-  const writer = textDecoderStream.writable.getWriter();
+function* parse(): Decoder<TextDecoderStream> {
+  while (true) {
+    const length = yield* getUint32();
+    const stream = new TextDecoderStream();
+    const writer = stream.writable.getWriter();
 
-  try {
-    yield { type: 1, text: textDecoderStream.readable };
-
-    const bytes = yield 4;
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    let eta = view.getUint32(0);
-
-    while (eta > 0) {
-      const chunk = yield -eta;
-      writer.write(chunk);
-      eta -= chunk.byteLength;
+    try {
+      yield stream;
+      yield* streamBytes(length, (chunk) => writer.write(chunk));
+    } finally {
+      writer.close();
     }
-  } finally {
-    writer.close();
   }
 }
 
-// ...
+// ... 👀 See previous example
 
 // [3] Parse a message split across chunks (streaming output)
 console.log(decoder.decode(chunk.subarray(0, 3)));
-// [
-//   {
-//     type: 1,
-//     text: ReadableStream { locked: false, state: 'readable', supportsBYOB: false }
-//   }
-// ]
-console.log(decoder.decode(chunk.subarray(3, 5)));
 // []
+console.log(decoder.decode(chunk.subarray(3, 5)));
+// [ TextDecoderStream { ... } ]
 console.log(decoder.decode(chunk.subarray(5)));
 // []
 ```

@@ -7,6 +7,7 @@ describe('close', () => {
     let closed;
 
     const decoder = new BinaryDecoder(function* () {
+      /* node:coverage disable */
       try {
         yield { result: yield 2 };
         yield Infinity;
@@ -14,6 +15,7 @@ describe('close', () => {
       } finally {
         closed ??= true;
       }
+      /* node:coverage enable */
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);

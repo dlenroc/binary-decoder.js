@@ -1,24 +1,31 @@
 {
   "name": "@dlenroc/binary-decoder",
-  "version": "0.1.0",
-  "description": "A lightweight library for incremental binary data parsing",
+  "version": "0.1.1",
+  "description": "Incremental binary data parser powered by generators.",
+  "keywords": [
+    "incremental",
+    "streaming",
+    "binary",
+    "decoder",
+    "parser"
+  ],
   "repository": "dlenroc/binary-decoder.js",
   "license": "MIT",
   "author": "Corneliu Duplachi",
   "type": "module",
-  "main": "./dist/BinaryDecoder.js",
-  "types": "./dist/BinaryDecoder.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
     "prepare": "pkgroll",
-    "test": "node --no-warnings --experimental-strip-types --experimental-test-coverage --test test/**/*.test.ts"
+    "test": "glob -c \"node --no-warnings --experimental-strip-types --experimental-test-coverage --test\" \"./test/**/*.test.ts\""
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
     "@tsconfig/strictest": "^2.0.5",
-    "@types/node": "^22.5.3",
+    "@types/node": "^22.5.4",
     "pkgroll": "^2.4.2",
     "typescript": "^5.5.4"
   }
