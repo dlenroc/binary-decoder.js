@@ -1,5 +1,5 @@
 import { describe, it } from 'node:test';
-import { setTimeout as delay } from 'timers/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { BinaryDecoder } from '../src/BinaryDecoder.ts';
 
 describe('performance', () => {
@@ -29,7 +29,7 @@ describe('performance', () => {
 
   it('throughput in ops/ms', async (ctx) => {
     const iterations = 1_000;
-    const decodeIterations = 1_000;
+    const decodeIterations = 10_000;
     const chunks = [
       Uint8Array.of(1, 2, 3),
       Uint8Array.of(4, 0, 5),
@@ -41,7 +41,7 @@ describe('performance', () => {
       const now = performance.now();
       for (let j = 0; j < decodeIterations; j++) {
         for (const chunk of chunks) {
-          decoder.decode(chunk);
+          [...decoder.decode(chunk)];
         }
       }
       results.push(~~(decodeIterations / (performance.now() - now)));

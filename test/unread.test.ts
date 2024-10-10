@@ -10,12 +10,9 @@ describe('yield Bytes ➡️ where Bytes is instanceof Uint8Array', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    const result = decoder.decode(Uint8Array.of());
+    const result = [...decoder.decode(Uint8Array.of())];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [{ result: chunk }],
-    });
+    assert.deepEqual(result, [{ result: chunk }]);
   });
 
   it('push-back multiple chunks', () => {
@@ -28,15 +25,12 @@ describe('yield Bytes ➡️ where Bytes is instanceof Uint8Array', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    const result = decoder.decode(Uint8Array.of());
+    const result = [...decoder.decode(Uint8Array.of())];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [
-        { result: chunk.subarray(3, 5) },
-        { result: chunk.subarray(0, 2) },
-      ],
-    });
+    assert.deepEqual(result, [
+      { result: chunk.subarray(3, 5) },
+      { result: chunk.subarray(0, 2) },
+    ]);
   });
 
   it('push-back subsequent chunks', () => {
@@ -48,11 +42,8 @@ describe('yield Bytes ➡️ where Bytes is instanceof Uint8Array', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    const result = decoder.decode(Uint8Array.of());
+    const result = [...decoder.decode(Uint8Array.of())];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [{ result: chunk.subarray(1, 4) }],
-    });
+    assert.deepEqual(result, [{ result: chunk.subarray(1, 4) }]);
   });
 });

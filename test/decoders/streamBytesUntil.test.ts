@@ -12,9 +12,9 @@ it('streamBytesUntil', () => {
 
   const chunk = Uint8Array.of(10, 20, 0, 30, 0, 0, 0, 40, 50);
   const result = [
-    decoder.decode(chunk.subarray(0, 1)),
-    decoder.decode(chunk.subarray(1, 3)),
-    decoder.decode(chunk.subarray(3)),
+    [...decoder.decode(chunk.subarray(0, 1))],
+    [...decoder.decode(chunk.subarray(1, 3))],
+    [...decoder.decode(chunk.subarray(3))],
   ];
 
   assert.deepEqual(
@@ -22,8 +22,5 @@ it('streamBytesUntil', () => {
     [[chunk.subarray(0, 1)], [chunk.subarray(1, 3)], [chunk.subarray(3, 4)]]
   );
 
-  assert.deepEqual(
-    result.map((it) => it.value),
-    [[], [], [{ rest: chunk.subarray(6) }]]
-  );
+  assert.deepEqual(result, [[], [], [{ rest: chunk.subarray(6) }]]);
 });

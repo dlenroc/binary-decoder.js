@@ -9,12 +9,9 @@ describe('yield N ➡️ where N >= 0', () => {
     });
 
     const chunk = Uint8Array.of(10);
-    const result = decoder.decode(chunk);
+    const result = [...decoder.decode(chunk)];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [{ result: chunk }],
-    });
+    assert.deepEqual(result, [{ result: chunk }]);
   });
 
   it('multiple reads', () => {
@@ -24,12 +21,12 @@ describe('yield N ➡️ where N >= 0', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    const result = decoder.decode(chunk);
+    const result = [...decoder.decode(chunk)];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [{ result: chunk.subarray(0, 2) }, { result: chunk.subarray(2) }],
-    });
+    assert.deepEqual(result, [
+      { result: chunk.subarray(0, 2) },
+      { result: chunk.subarray(2) },
+    ]);
   });
 
   it('incremental read', () => {
@@ -40,19 +37,19 @@ describe('yield N ➡️ where N >= 0', () => {
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
     const result = [
-      decoder.decode(chunk.subarray(0, 1)),
-      decoder.decode(chunk.subarray(1, 2)),
-      decoder.decode(chunk.subarray(2, 3)),
-      decoder.decode(chunk.subarray(3, 4)),
-      decoder.decode(chunk.subarray(4, 5)),
+      [...decoder.decode(chunk.subarray(0, 1))],
+      [...decoder.decode(chunk.subarray(1, 2))],
+      [...decoder.decode(chunk.subarray(2, 3))],
+      [...decoder.decode(chunk.subarray(3, 4))],
+      [...decoder.decode(chunk.subarray(4, 5))],
     ];
 
     assert.deepEqual(result, [
-      { done: false, value: [] },
-      { done: false, value: [{ result: chunk.subarray(0, 2) }] },
-      { done: false, value: [] },
-      { done: false, value: [] },
-      { done: true, value: [{ result: chunk.subarray(2) }] },
+      [],
+      [{ result: chunk.subarray(0, 2) }],
+      [],
+      [],
+      [{ result: chunk.subarray(2) }],
     ]);
   });
 
@@ -66,17 +63,14 @@ describe('yield N ➡️ where N >= 0', () => {
     });
 
     const chunk = Uint8Array.of(10);
-    const result = decoder.decode(chunk);
+    const result = [...decoder.decode(chunk)];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [
-        { result: chunk.subarray(0, 0) },
-        { result: chunk.subarray(0, 0) },
-        { result: chunk },
-        { result: chunk.subarray(0, 0) },
-        { result: chunk.subarray(0, 0) },
-      ],
-    });
+    assert.deepEqual(result, [
+      { result: chunk.subarray(0, 0) },
+      { result: chunk.subarray(0, 0) },
+      { result: chunk },
+      { result: chunk.subarray(0, 0) },
+      { result: chunk.subarray(0, 0) },
+    ]);
   });
 });

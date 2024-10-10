@@ -19,17 +19,14 @@ describe('close', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    decoder.decode(chunk);
+    [...decoder.decode(chunk)];
 
     const result = decoder.close();
     assert.deepEqual(
-      { done: closed, result },
+      { closed, result },
       {
-        done: true,
-        result: {
-          buffers: [chunk.subarray(2)],
-          value: [],
-        },
+        closed: true,
+        result: [chunk.subarray(2)],
       }
     );
   });
@@ -42,13 +39,10 @@ describe('close', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    assert.throws(() => decoder.decode(chunk), error);
+    assert.throws(() => [...decoder.decode(chunk)], error);
 
     const result = decoder.close();
-    assert.deepEqual(result, {
-      buffers: [chunk.subarray(2)],
-      value: [{ result: chunk.subarray(0, 2) }],
-    });
+    assert.deepEqual(result, [chunk.subarray(2)]);
   });
 
   it('returns no values or buffers on re-close', () => {
@@ -58,14 +52,11 @@ describe('close', () => {
     });
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    assert.throws(() => decoder.decode(chunk));
+    assert.throws(() => [...decoder.decode(chunk)]);
     decoder.close();
 
     const result = decoder.close();
-    assert.deepEqual(result, {
-      buffers: [],
-      value: [],
-    });
+    assert.deepEqual(result, []);
   });
 
   it('returns buffers passed after close', () => {
@@ -74,13 +65,10 @@ describe('close', () => {
     decoder.close();
 
     const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-    decoder.decode(chunk.subarray(0, 2));
-    decoder.decode(chunk.subarray(2));
+    [...decoder.decode(chunk.subarray(0, 2))];
+    [...decoder.decode(chunk.subarray(2))];
 
     const result = decoder.close();
-    assert.deepEqual(result, {
-      buffers: [chunk.subarray(0, 2), chunk.subarray(2)],
-      value: [],
-    });
+    assert.deepEqual(result, [chunk.subarray(0, 2), chunk.subarray(2)]);
   });
 });

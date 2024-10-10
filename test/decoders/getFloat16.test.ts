@@ -26,10 +26,10 @@ it('getFloat16', () => {
   ];
 
   const chunk = Uint16Array.from(entries.map((it) => it[0]!));
-  const result = decoder.decode(chunk);
+  const result = [...decoder.decode(chunk)];
 
-  assert.deepEqual(result, {
-    done: false,
-    value: entries.map((it) => ({ result: it[1]! })),
-  });
+  assert.deepEqual(
+    result,
+    entries.map((it) => ({ result: it[1]! }))
+  );
 });

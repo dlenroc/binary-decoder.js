@@ -11,16 +11,13 @@ it('streamBytes', () => {
   });
 
   const chunk = Uint8Array.of(10, 20, 30, 40, 50);
-  decoder.decode(chunk.subarray(0, 2));
-  const result = decoder.decode(chunk.subarray(2));
+  [...decoder.decode(chunk.subarray(0, 2))];
+  const result = [...decoder.decode(chunk.subarray(2))];
 
   assert.deepEqual(
     fn.mock.calls.map((it) => it.arguments),
     [[chunk.subarray(0, 2)], [chunk.subarray(2, 3)]]
   );
 
-  assert.deepEqual(result, {
-    done: true,
-    value: [{ rest: chunk.subarray(3) }],
-  });
+  assert.deepEqual(result, [{ rest: chunk.subarray(3) }]);
 });

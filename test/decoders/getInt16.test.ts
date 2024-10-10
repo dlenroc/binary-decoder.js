@@ -9,12 +9,9 @@ it('getInt16', () => {
   });
 
   const result = [
-    decoder.decode(Uint8Array.of(0x12, 0x34)),
-    decoder.decode(Uint8Array.of(0xed, 0xcc)),
+    [...decoder.decode(Uint8Array.of(0x12, 0x34))],
+    [...decoder.decode(Uint8Array.of(0xed, 0xcc))],
   ];
 
-  assert.deepEqual(result, [
-    { done: false, value: [{ result: 0x1234 }] },
-    { done: false, value: [{ result: -0x1234 }] },
-  ]);
+  assert.deepEqual(result, [[{ result: 0x1234 }], [{ result: -0x1234 }]]);
 });

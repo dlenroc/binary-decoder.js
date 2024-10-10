@@ -10,10 +10,7 @@ it('skipBytes', () => {
   });
 
   const chunk = Uint8Array.of(10, 20, 30, 40);
-  const result = decoder.decode(chunk);
+  const result = [...decoder.decode(chunk)];
 
-  assert.deepEqual(result, {
-    done: true,
-    value: [{ rest: chunk.subarray(2) }],
-  });
+  assert.deepEqual(result, [{ rest: chunk.subarray(2) }]);
 });

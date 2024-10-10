@@ -31,7 +31,7 @@ const decoder = new BinaryDecoder(function* () {
   yield { fixedLengthBytes, variableLengthBytes, extraBytes: yield -Infinity };
 });
 
-console.log(decoder.decode(Uint8Array.of(10, 20, 30)));
+console.log([...decoder.decode(Uint8Array.of(10, 20, 30))]);
 // [
 //   {
 //     fixedLengthBytes: Uint8Array(2) [ 10, 20 ],
@@ -73,19 +73,19 @@ const chunk = new Uint8Array([...new Uint8Array(4), ...textBytes]);
 new DataView(chunk.buffer).setUint32(0, textBytes.byteLength);
 
 // [1] Parse a message
-console.log(decoder.decode(chunk));
+console.log([...decoder.decode(chunk)]);
 // [ 'Hello, World!' ]
 
 // [2] Parse multiple messages
-console.log(decoder.decode(Uint8Array.of(...chunk, ...chunk)));
+console.log([...decoder.decode(Uint8Array.of(...chunk, ...chunk))]);
 // [ 'Hello, World!', 'Hello, World!' ]
 
 // [3] Parse a message split across chunks
-console.log(decoder.decode(chunk.subarray(0, 3)));
+console.log([...decoder.decode(chunk.subarray(0, 3))]);
 // []
-console.log(decoder.decode(chunk.subarray(3, 5)));
+console.log([...decoder.decode(chunk.subarray(3, 5))]);
 // []
-console.log(decoder.decode(chunk.subarray(5)));
+console.log([...decoder.decode(chunk.subarray(5))]);
 // [ 'Hello, World!' ]
 ```
 
@@ -114,10 +114,10 @@ function* parse(): Decoder<TextDecoderStream> {
 // ... 👀 See previous example
 
 // [3] Parse a message split across chunks (streaming output)
-console.log(decoder.decode(chunk.subarray(0, 3)));
+console.log([...decoder.decode(chunk.subarray(0, 3))]);
 // []
-console.log(decoder.decode(chunk.subarray(3, 5)));
+console.log([...decoder.decode(chunk.subarray(3, 5))]);
 // [ TextDecoderStream { ... } ]
-console.log(decoder.decode(chunk.subarray(5)));
+console.log([...decoder.decode(chunk.subarray(5))]);
 // []
 ```

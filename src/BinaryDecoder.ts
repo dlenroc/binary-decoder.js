@@ -1,157 +1,137 @@
-type Yield<T = never> = number | ArrayBufferView | T;
-type DecodedEntry<T> = [T] extends [never] ? unknown[] : T[];
-type DecoderResult<T> = IteratorResult<DecodedEntry<T>, DecodedEntry<T>>;
-type DecoderCloseResult<T> = { buffers: Uint8Array[]; value: DecodedEntry<T> };
-
 export type Decoder<T = never, TReturn = void> = Generator<
-  Yield<T>,
+  number | ArrayBufferView | T,
   TReturn,
   Uint8Array
 >;
 
 export class BinaryDecoder<T = never> {
-  #byteLength = 0;
   #bytesNeeded = 0;
+  #byteLength = 0;
   #decoder: Decoder<T>;
-  #done = false;
-  #results: T[] = [];
-  #stack: Pick<Uint8Array, 'buffer' | 'byteOffset' | 'byteLength'>[] = [];
+  #queue: {
+    buffer: ArrayBuffer;
+    byteOffset: number;
+    byteLength: number;
+  }[] = [];
 
   constructor(decoder: () => Decoder<T>) {
     this.#decoder = decoder();
   }
 
-  close(): DecoderCloseResult<T> {
+  decode(input: ArrayBufferView): IteratorObject<T, undefined, undefined> {
+    if (input.byteLength > 0) {
+      this.#byteLength += input.byteLength;
+      this.#queue.unshift({
+        buffer: input.buffer,
+        byteOffset: input.byteOffset,
+        byteLength: input.byteLength,
+      });
+    }
+
+    return this[Symbol.iterator]();
+  }
+
+  close(): Uint8Array[] {
     const buffers = [];
 
     let frame;
-    while ((frame = this.#stack.pop())) {
+    while ((frame = this.#queue.pop())) {
       buffers.push(
         new Uint8Array(frame.buffer, frame.byteOffset, frame.byteLength)
       );
     }
 
     this.#decoder.return();
-
-    const value = this.#results;
-    this.#results = [];
-    return { buffers, value };
+    return buffers;
   }
 
-  decode(input: ArrayBufferView): DecoderResult<T> {
-    const results: T[] = this.#results;
-
-    let frame = {
-      buffer: input.buffer,
-      byteOffset: input.byteOffset,
-      byteLength: input.byteLength,
-    };
-
-    if (input.byteLength !== 0) {
-      this.#byteLength += input.byteLength;
-      if (this.#stack.length !== 0) {
-        const topFrame = this.#stack.pop()!;
-        this.#stack.unshift(frame);
-        frame = topFrame;
-      }
-    }
-
-    let result;
+  *[Symbol.iterator](): IteratorObject<T, undefined, undefined> {
     while (this.#byteLength >= this.#bytesNeeded) {
-      if (this.#bytesNeeded < 0) {
-        if (frame.byteLength === 0) break;
-        this.#bytesNeeded = Math.min(-this.#bytesNeeded, frame.byteLength);
-      } else if (frame.byteLength < this.#bytesNeeded) {
-        this.#stack.push(frame);
+      let view: Uint8Array;
 
-        const bytes = new Uint8Array(this.#bytesNeeded);
-        frame = { buffer: bytes.buffer, byteOffset: 0, byteLength: 0 };
+      if (this.#bytesNeeded === 0) {
+        view = new Uint8Array(0);
+      } else {
+        const frame = this.#queue.pop();
+        if (frame === undefined) {
+          break;
+        }
 
-        let topFrame;
-        let topFrameOffset = 0;
-        do {
-          topFrame = this.#stack.pop()!;
-          topFrameOffset = Math.min(
-            topFrame.byteLength,
-            this.#bytesNeeded - frame.byteLength
+        if (this.#bytesNeeded > frame.byteLength) {
+          this.#byteLength -= this.#bytesNeeded;
+          this.#queue.push(frame);
+          view = new Uint8Array(this.#bytesNeeded);
+
+          let offset = 0;
+          while (this.#bytesNeeded > 0) {
+            const nextFrame = this.#queue.pop()!;
+            const length = Math.min(nextFrame.byteLength, this.#bytesNeeded);
+            view.set(
+              new Uint8Array(nextFrame.buffer, nextFrame.byteOffset, length),
+              offset
+            );
+
+            offset += length;
+            this.#bytesNeeded -= length;
+
+            if (nextFrame.byteLength > length) {
+              nextFrame.byteOffset += length;
+              nextFrame.byteLength -= length;
+              this.#queue.push(nextFrame);
+            }
+          }
+        } else {
+          if (this.#bytesNeeded < 0) {
+            this.#bytesNeeded = Math.min(-this.#bytesNeeded, frame.byteLength);
+          }
+
+          this.#byteLength -= this.#bytesNeeded;
+          view = new Uint8Array(
+            frame.buffer,
+            frame.byteOffset,
+            this.#bytesNeeded
           );
 
-          bytes.set(
-            new Uint8Array(
-              topFrame.buffer,
-              topFrame.byteOffset,
-              topFrameOffset
-            ),
-            frame.byteLength
-          );
-        } while ((frame.byteLength += topFrameOffset) < this.#bytesNeeded);
-
-        if (topFrameOffset < topFrame.byteLength) {
-          this.#stack.push({
-            buffer: topFrame.buffer,
-            byteOffset: topFrame.byteOffset + topFrameOffset,
-            byteLength: topFrame.byteLength - topFrameOffset,
-          });
+          if (frame.byteLength > this.#bytesNeeded) {
+            frame.byteOffset += this.#bytesNeeded;
+            frame.byteLength -= this.#bytesNeeded;
+            this.#queue.push(frame);
+          }
         }
       }
 
-      try {
-        result = this.#decoder.next(
-          new Uint8Array(frame.buffer, frame.byteOffset, this.#bytesNeeded)
-        );
-      } catch (error) {
-        this.#stack.push(frame);
-        throw error;
+      const { done, value } = this.#decoder.next(view);
+      if (done) {
+        this.#bytesNeeded = 0;
+        return;
       }
 
-      this.#byteLength -= this.#bytesNeeded;
-      frame.byteOffset += this.#bytesNeeded;
-      frame.byteLength -= this.#bytesNeeded;
-
-      if (result.done) {
-        this.#done = true;
-        break;
-      }
-
-      if (typeof result.value === 'number') {
-        this.#bytesNeeded = result.value;
-      } else if (ArrayBuffer.isView(result.value)) {
-        this.#byteLength += result.value.byteLength;
+      if (typeof value === 'number') {
+        this.#bytesNeeded = value;
+      } else if (ArrayBuffer.isView(value)) {
         this.#bytesNeeded = 0;
 
+        const nextFrame = this.#queue[this.#queue.length - 1];
         if (
-          result.value.buffer === frame.buffer &&
-          result.value.byteOffset + result.value.byteLength === frame.byteOffset
+          nextFrame !== undefined &&
+          nextFrame.buffer === value.buffer &&
+          nextFrame.byteOffset === value.byteOffset + value.byteLength
         ) {
-          frame.byteLength += result.value.byteLength;
-          frame.byteOffset = result.value.byteOffset;
+          this.#byteLength += value.byteLength;
+          nextFrame.byteOffset = value.byteOffset;
+          nextFrame.byteLength += value.byteLength;
         } else {
-          if (frame.byteLength > 0) {
-            this.#stack.push(frame);
-          }
-
-          frame = {
-            buffer: result.value.buffer,
-            byteOffset: result.value.byteOffset,
-            byteLength: result.value.byteLength,
-          };
+          this.#byteLength += value.byteLength;
+          this.#queue.push({
+            buffer: value.buffer,
+            byteOffset: value.byteOffset,
+            byteLength: value.byteLength,
+          });
         }
       } else {
         this.#bytesNeeded = 0;
-
-        results.push(result.value);
-      }
-
-      if (frame.byteLength == 0 && this.#byteLength > 0) {
-        frame = this.#stack.pop()!;
+        yield value;
       }
     }
-
-    if (frame.byteLength > 0) {
-      this.#stack.push(frame);
-    }
-
-    this.#results = [];
-    return { done: this.#done, value: results };
   }
 }

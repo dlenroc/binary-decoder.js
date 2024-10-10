@@ -9,12 +9,12 @@ it('getInt32', () => {
   });
 
   const result = [
-    decoder.decode(Uint8Array.of(0x12, 0x34, 0x56, 0x78)),
-    decoder.decode(Uint8Array.of(0xed, 0xcb, 0xa9, 0x88)),
+    [...decoder.decode(Uint8Array.of(0x12, 0x34, 0x56, 0x78))],
+    [...decoder.decode(Uint8Array.of(0xed, 0xcb, 0xa9, 0x88))],
   ];
 
   assert.deepEqual(result, [
-    { done: false, value: [{ result: 0x12345678 }] },
-    { done: false, value: [{ result: -0x12345678 }] },
+    [{ result: 0x12345678 }],
+    [{ result: -0x12345678 }],
   ]);
 });

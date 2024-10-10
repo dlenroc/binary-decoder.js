@@ -10,12 +10,9 @@ describe('getUint32', () => {
     });
 
     const chunk = Uint8Array.of(0x12, 0x34, 0x56, 0x78);
-    const result = decoder.decode(chunk);
+    const result = [...decoder.decode(chunk)];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [{ result: 0x12345678 }],
-    });
+    assert.deepEqual(result, [{ result: 0x12345678 }]);
   });
 
   it('little-endian', () => {
@@ -24,11 +21,8 @@ describe('getUint32', () => {
     });
 
     const chunk = Uint8Array.of(0x78, 0x56, 0x34, 0x12);
-    const result = decoder.decode(chunk);
+    const result = [...decoder.decode(chunk)];
 
-    assert.deepEqual(result, {
-      done: true,
-      value: [{ result: 0x12345678 }],
-    });
+    assert.deepEqual(result, [{ result: 0x12345678 }]);
   });
 });
