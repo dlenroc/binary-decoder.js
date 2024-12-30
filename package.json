@@ -1,6 +1,6 @@
 {
   "name": "@dlenroc/binary-decoder",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Incremental binary data parser powered by generators.",
   "keywords": [
     "incremental",
@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "prepare": "pkgroll",
-    "test": "glob -c \"node --no-warnings --experimental-strip-types --experimental-test-coverage --test\" \"./test/**/*.test.ts\""
+    "test": "node --test --experimental-test-coverage --experimental-strip-types --no-warnings"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
