@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { BinaryDecoder } from '../../src/BinaryDecoder.ts';
-import { skipBytes } from '../../src/index.ts';
+import { BinaryDecoder, skipBytes } from '../../src/index.ts';
 
 it('skipBytes', () => {
   const decoder = new BinaryDecoder(function* () {

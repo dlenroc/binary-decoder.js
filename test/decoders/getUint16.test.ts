@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { BinaryDecoder } from '../../src/BinaryDecoder.ts';
-import { getUint16 } from '../../src/index.ts';
+import { BinaryDecoder, getUint16 } from '../../src/index.ts';
 
 describe('getUint16', () => {
   it('big-endian', () => {

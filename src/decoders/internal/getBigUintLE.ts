@@ -1,14 +1,15 @@
 import type { Decoder } from '../../BinaryDecoder.ts';
 
-export function* getUintLE(byteLength: number): Decoder<never, number> {
-  let value = 0;
-  let shift = -8;
+export function* getBigUintLE(): Decoder<never, bigint> {
+  let value = 0n;
+  let shift = -8n;
+  let byteLength = 8;
 
   let chunk;
   do {
     chunk = yield -byteLength;
     for (let byte of chunk) {
-      value |= byte << (shift += 8);
+      value |= BigInt(byte) << (shift += 8n);
     }
   } while ((byteLength -= chunk.length));
 

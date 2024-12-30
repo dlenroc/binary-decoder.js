@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { it, mock } from 'node:test';
-import { BinaryDecoder } from '../../src/BinaryDecoder.ts';
-import { streamBytesUntil } from '../../src/index.ts';
+import { BinaryDecoder, streamBytesUntil } from '../../src/index.ts';
 
 it('streamBytesUntil', () => {
   const fn = mock.fn();

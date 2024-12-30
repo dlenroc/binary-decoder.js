@@ -6,7 +6,9 @@ export function* getUintBE(byteLength: number): Decoder<never, number> {
   let chunk;
   do {
     chunk = yield -byteLength;
-    for (let byte of chunk) value = (value << 8) | byte;
+    for (let byte of chunk) {
+      value = (value << 8) | byte;
+    }
   } while ((byteLength -= chunk.length));
 
   return value;

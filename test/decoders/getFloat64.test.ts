@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
-import { BinaryDecoder, getFloat32 } from '../../src/index.ts';
+import { BinaryDecoder, getFloat64 } from '../../src/index.ts';
 
-it('getFloat32', () => {
+it('getFloat64', () => {
   const decoder = new BinaryDecoder(function* () {
-    while (true) yield [yield* getFloat32()];
+    while (true) yield [yield* getFloat64()];
   });
 
   const entries = [
@@ -13,8 +13,8 @@ it('getFloat32', () => {
     -0,
     Infinity,
     -Infinity,
-    3.1415927410125732,
-    0.3333333432674408,
+    3.141592653589793,
+    0.3333333333333333,
     NaN,
   ];
 
@@ -22,8 +22,8 @@ it('getFloat32', () => {
     ...decoder.decode(
       Uint8Array.from(
         entries.flatMap((it) => {
-          const bytes = new Uint8Array(4);
-          new DataView(bytes.buffer).setFloat32(0, it);
+          const bytes = new Uint8Array(8);
+          new DataView(bytes.buffer).setFloat64(0, it);
           return [...bytes];
         })
       )

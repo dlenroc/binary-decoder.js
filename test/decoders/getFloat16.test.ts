@@ -5,10 +5,10 @@ import { getFloat16 } from '../../src/index.ts';
 
 it('getFloat16', () => {
   const decoder = new BinaryDecoder(function* () {
-    while (true) yield { result: yield* getFloat16() };
+    while (true) yield [yield* getFloat16()];
   });
 
-  const entries = [
+  const entries: [number, number][] = [
     [0x0000, 0],
     [0x0100, 5.960464477539063e-8],
     [0xff03, 0.00006097555160522461],
@@ -25,11 +25,14 @@ it('getFloat16', () => {
     [0x007e, NaN],
   ];
 
-  const chunk = Uint16Array.from(entries.map((it) => it[0]!));
-  const result = [...decoder.decode(chunk)];
+  const result = [
+    ...decoder.decode(
+      Uint8Array.from(entries.flatMap(([it]) => [it & 0xff, (it >> 8) & 0xff]))
+    ),
+  ];
 
   assert.deepEqual(
     result,
-    entries.map((it) => ({ result: it[1]! }))
+    entries.map(([, it]) => [it])
   );
 });
